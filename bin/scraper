@@ -9,42 +9,42 @@
 # Link::      https://www.linkedin.com/in/alex-petrov/
 class Scraper
   # Site homepage.
-  URL = 'https://www.coldwellbankerhomes.com/sitemap/real-estate/'
+  BASE_URL = 'https://www.coldwellbankerhomes.com'
+  STATES_URL = 'https://www.coldwellbankerhomes.com/sitemap/real-estate/'
 
   def initialize; end
 
   def call
     $stdout.puts '== Scraping... =='
-    data = scrap_data
-    parse_data(data)
-    export_to_csv
+    scrap_data
+    # export_to_csv
   end
 
   private
 
-  def scrap_data
+  def get_page_html(url)
     require 'curb'
+    require 'nokogiri'
 
-    $stdout.puts '== Scraping states page... =='
-
-    http = Curl.get(URL)
-    http.body_str
+    get_response = Curl.get(url)
+    Nokogiri::HTML(get_response.body_str)
+  rescue StandardError => error
+    $stderr.puts '  -- Error during getting page HTML --'
+    $stderr.puts error.inspect
   end
 
-  def parse_data(data)
-    parse_states(data)
+  def scrap_data
+    parse_states
     parse_regions
     parse_products
   end
 
-  def parse_states(data)
-    require 'nokogiri'
-
-    page_html = Nokogiri::HTML(data)
+  def parse_states
+    $stdout.puts '== Scraping states page... =='
+    page_html = get_page_html(STATES_URL)
     return unless page_html
 
     estates_list = page_html.css('table.table-sort a')
-
     $stdout.puts estates_list
   end
 
