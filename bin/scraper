@@ -14,7 +14,6 @@ class Scraper
 
   # Site homepage.
   BASE_URL = 'https://www.coldwellbankerhomes.com'
-  STATES_URL = 'https://www.coldwellbankerhomes.com/sitemap/real-estate/'
 
   def initialize; end
 
@@ -33,10 +32,11 @@ class Scraper
     warn error.inspect
   end
 
-  # TODO: Refactor this fat method.
+  # TODO: Refactor this fat method: Metrics/AbcSize, Metrics/MethodLength.
   def scrap_data
     # == All states
-    states = scrap_states
+    states = scrap_links_page('states', "#{BASE_URL}/sitemap/real-estate/",
+                              'table.table-sort a')
 
     $stdout.puts "  -- Scraped total #{states.count} states --"
 
@@ -49,7 +49,8 @@ class Scraper
     # == 1 Region
 
     test_state = states.first
-    regions = scrap_regions(test_state)
+    regions = scrap_links_page("state `#{test_state[:name]}`",
+                               test_state[:url], 'table.table-sort a')
 
     $stdout.puts "  -- Scraped total #{regions.count} regions --"
 
@@ -62,7 +63,10 @@ class Scraper
     # == 1 page of products from region
 
     test_region = regions[1]
-    products = scrap_products(test_region)
+    products = scrap_links_page("region `#{test_region[:name]}`",
+                                test_region[:url],
+                                'div#searchList div.prop-info div.address a',
+                                '.street-address')
 
     $stdout.puts "  -- Scraped total #{products.count} products --"
 
@@ -74,45 +78,15 @@ class Scraper
       "#{test_region[:name].downcase.tr(' ', '_')}_products", products)
   end
 
-  def scrap_states
-    $stdout.puts "\n== Scraping states page =="
-    page_html = get_page_html(STATES_URL)
-    return unless page_html
+  def scrap_links_page(name, url, selector, name_selector = nil)
+    $stdout.puts "\n== Scraping #{name} page =="
 
-    estates_list = page_html.css('table.table-sort a')
-    return unless estates_list
+    # Performance note: condition inside loop is bad, but for this case its ok.
+    get_page_html(url)&.css(selector)&.map do |estate_node|
+      link_name_node = estate_node
+      link_name_node = estate_node.at_css(name_selector) if name_selector
 
-    estates_list.map do |estate_node|
-      { name: estate_node.content, url: BASE_URL + estate_node[:href] }
-    end
-  end
-
-  def scrap_regions(state)
-    $stdout.puts "\n== Scraping state `#{state[:name]}` page =="
-
-    page_html = get_page_html(state[:url])
-    return unless page_html
-
-    regions_list = page_html.css('table.table-sort a')
-    return unless regions_list
-
-    regions_list.map do |estate_node|
-      { name: estate_node.content, url: BASE_URL + estate_node[:href] }
-    end
-  end
-
-  def scrap_products(region)
-    $stdout.puts "\n== Scraping region `#{region[:name]}` page =="
-
-    page_html = get_page_html(region[:url])
-    return unless page_html
-
-    products_list = page_html.css('div#searchList div.prop-info div.address a')
-    return unless products_list
-
-    products_list.map do |estate_node|
-      { name: estate_node.at_css('.street-address').content
-                         .gsub(/[[:space:]]/, ' ').strip,
+      { name: link_name_node.content.gsub(/[[:space:]]/, ' ').strip,
         url: BASE_URL + estate_node[:href] }
     end
   end
