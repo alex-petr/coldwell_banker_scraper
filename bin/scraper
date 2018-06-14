@@ -33,8 +33,10 @@ class Scraper
     warn error.inspect
   end
 
+  # TODO: Refactor this fat method.
   def scrap_data
-    states = parse_states
+    # == All states
+    states = scrap_states
 
     $stdout.puts "  -- Scraped total #{states.count} states --"
 
@@ -44,7 +46,10 @@ class Scraper
 
     export_to_csv('states', states)
 
-    regions = parse_regions(states.first)
+    # == 1 Region
+
+    test_state = states.first
+    regions = scrap_regions(test_state)
 
     $stdout.puts "  -- Scraped total #{regions.count} regions --"
 
@@ -54,10 +59,22 @@ class Scraper
 
     export_to_csv('regions', regions)
 
-    parse_products
+    # == 1 page of products from region
+
+    test_region = regions[1]
+    products = scrap_products(test_region)
+
+    $stdout.puts "  -- Scraped total #{products.count} products --"
+
+    products.each do |product|
+      $stdout.puts "  #{product[:name].ljust(32)} -> #{product[:url]}"
+    end
+
+    export_to_csv("#{test_state[:name].downcase.tr(' ', '_')}_"\
+      "#{test_region[:name].downcase.tr(' ', '_')}_products", products)
   end
 
-  def parse_states
+  def scrap_states
     $stdout.puts "\n== Scraping states page =="
     page_html = get_page_html(STATES_URL)
     return unless page_html
@@ -70,7 +87,7 @@ class Scraper
     end
   end
 
-  def parse_regions(state)
+  def scrap_regions(state)
     $stdout.puts "\n== Scraping state `#{state[:name]}` page =="
 
     page_html = get_page_html(state[:url])
@@ -84,24 +101,44 @@ class Scraper
     end
   end
 
-  # TODO: Add implementation, region` param.
-  def parse_products; end
+  def scrap_products(region)
+    $stdout.puts "\n== Scraping region `#{region[:name]}` page =="
 
-  def export_to_csv(file_name, data)
-    $stdout.puts "\n== Exporting #{file_name} to CSV file =="
-    filename = "output/#{file_name}.csv"
+    page_html = get_page_html(region[:url])
+    return unless page_html
 
-    remove_existing_file(filename)
+    products_list = page_html.css('div#searchList div.prop-info div.address a')
+    return unless products_list
 
-    CSV.open(filename, 'w') do |csv|
+    products_list.map do |estate_node|
+      { name: estate_node.at_css('.street-address').content
+                         .gsub(/[[:space:]]/, ' ').strip,
+        url: BASE_URL + estate_node[:href] }
+    end
+  end
+
+  # TODO: Add implementation, `url` param.
+  def scrap_product; end
+
+  def export_to_csv(name, data)
+    file_name = output_csv_filename(name)
+
+    remove_existing_file(file_name)
+
+    CSV.open(file_name, 'w') do |csv|
       csv << data.first.keys
       data.each { |record| csv << record.each_value }
     end
 
-    csv_file_created?(filename)
+    csv_file_created?(file_name)
   rescue StandardError => error
     warn '  -- Error during saving to CSV file --'
     warn error.inspect
+  end
+
+  def output_csv_filename(file_name)
+    $stdout.puts "\n== Exporting #{file_name} to CSV file =="
+    "output/#{file_name}.csv"
   end
 
   def remove_existing_file(file_name)
