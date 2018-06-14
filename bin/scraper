@@ -17,7 +17,6 @@ class Scraper
   def call
     $stdout.puts '== Scraping... =='
     scrap_data
-    # export_to_csv
   end
 
   private
@@ -29,43 +28,51 @@ class Scraper
     get_response = Curl.get(url)
     Nokogiri::HTML(get_response.body_str)
   rescue StandardError => error
-    $stderr.puts '  -- Error during getting page HTML --'
-    $stderr.puts error.inspect
+    warn '  -- Error during getting page HTML --'
+    warn error.inspect
   end
 
   def scrap_data
-    parse_states
+    states = parse_states
+    $stdout.puts states
+
+    export_to_csv('states', states)
+
     parse_regions
     parse_products
   end
 
   def parse_states
-    $stdout.puts '== Scraping states page... =='
+    $stdout.puts '== Scraping states page =='
     page_html = get_page_html(STATES_URL)
     return unless page_html
 
     estates_list = page_html.css('table.table-sort a')
-    $stdout.puts estates_list
+    return unless estates_list
+
+    estates_list.map do |estate_node|
+      { name: estate_node.content, url: BASE_URL + estate_node[:href] }
+    end
   end
 
-  # state
+  # TODO: Add implementation, `state` param.
   def parse_regions; end
 
-  # region
+  # TODO: Add implementation, region` param.
   def parse_products; end
 
-  def export_to_csv
+  def export_to_csv(file_name, data)
     require 'csv'
 
-    column_names = %w[street_address state country zip_code price bedrooms
-        bathrooms year_built photos url]
+    $stdout.puts "== Exporting #{file_name} to CSV file =="
 
-    $stdout.puts '== Exporting results to CSV file... =='
-
-    CSV.open('output/products.csv', 'w') do |csv|
-      csv << column_names
-      csv << %w[data1 data2]
+    CSV.open("output/#{file_name}.csv", 'w') do |csv|
+      csv << data.first.keys
+      data.each { |record| csv << record.each_value }
     end
+  rescue StandardError => error
+    warn '  -- Error during saving to CSV file --'
+    warn error.inspect
   end
 end
 
