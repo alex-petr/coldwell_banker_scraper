@@ -1,0 +1,44 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Main class for scrapping https://www.coldwellbankerhomes.com.
+#
+# Author::    Alexander Petrov mailto:alex.petrofan@gmail.com
+# Link::      https://www.linkedin.com/in/alex-petrov/
+class Scraper
+  # Site homepage.
+  URL = 'https://www.coldwellbankerhomes.com'
+
+  def initialize; end
+
+  def call
+    $stdout.puts '== Scraping... =='
+    scrap_data
+    parse_data
+    export_to_csv
+  end
+
+  private
+
+  # for any state or states must be total scraped 20 000 or more products
+  # TODO: Use `curb`.
+  def scrap_data; end
+
+  def parse_data
+    parse_states
+    parse_regions
+    parse_products
+  end
+
+  def parse_states; end
+
+  # state
+  def parse_regions; end
+
+  # region
+  def parse_products; end
+
+  def export_to_csv; end
+end
+
+Scraper.new.call
