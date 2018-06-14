@@ -2,7 +2,11 @@ GEM
   remote: https://rubygems.org/
   specs:
     ast (2.4.0)
+    curb (0.9.6)
     jaro_winkler (1.5.1)
+    mini_portile2 (2.3.0)
+    nokogiri (1.8.2)
+      mini_portile2 (~> 2.3.0)
     parallel (1.12.1)
     parser (2.5.1.0)
       ast (~> 2.4.0)
@@ -23,6 +27,8 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  curb
+  nokogiri
   rubocop
 
 BUNDLED WITH

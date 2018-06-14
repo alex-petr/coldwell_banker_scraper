@@ -3,34 +3,50 @@
 
 # Main class for scrapping https://www.coldwellbankerhomes.com.
 #
+# For any state or states must be total scraped 20 000 or more products.
+#
 # Author::    Alexander Petrov mailto:alex.petrofan@gmail.com
 # Link::      https://www.linkedin.com/in/alex-petrov/
 class Scraper
   # Site homepage.
-  URL = 'https://www.coldwellbankerhomes.com'
+  URL = 'https://www.coldwellbankerhomes.com/sitemap/real-estate/'
 
   def initialize; end
 
   def call
     $stdout.puts '== Scraping... =='
-    scrap_data
-    parse_data
+    data = scrap_data
+    parse_data(data)
     export_to_csv
   end
 
   private
 
-  # for any state or states must be total scraped 20 000 or more products
-  # TODO: Use `curb`.
-  def scrap_data; end
+  def scrap_data
+    require 'curb'
 
-  def parse_data
-    parse_states
+    $stdout.puts '== Scraping states page... =='
+
+    http = Curl.get(URL)
+    http.body_str
+  end
+
+  def parse_data(data)
+    parse_states(data)
     parse_regions
     parse_products
   end
 
-  def parse_states; end
+  def parse_states(data)
+    require 'nokogiri'
+
+    page_html = Nokogiri::HTML(data)
+    return unless page_html
+
+    estates_list = page_html.css('table.table-sort a')
+
+    $stdout.puts estates_list
+  end
 
   # state
   def parse_regions; end
