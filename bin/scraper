@@ -8,6 +8,10 @@
 # Author::    Alexander Petrov mailto:alex.petrofan@gmail.com
 # Link::      https://www.linkedin.com/in/alex-petrov/
 class Scraper
+  require 'curb'
+  require 'nokogiri'
+  require 'csv'
+
   # Site homepage.
   BASE_URL = 'https://www.coldwellbankerhomes.com'
   STATES_URL = 'https://www.coldwellbankerhomes.com/sitemap/real-estate/'
@@ -22,9 +26,6 @@ class Scraper
   private
 
   def get_page_html(url)
-    require 'curb'
-    require 'nokogiri'
-
     get_response = Curl.get(url)
     Nokogiri::HTML(get_response.body_str)
   rescue StandardError => error
@@ -34,16 +35,30 @@ class Scraper
 
   def scrap_data
     states = parse_states
-    $stdout.puts states
+
+    $stdout.puts "  -- Scraped total #{states.count} states --"
+
+    states.each do |state|
+      $stdout.puts "  #{state[:name].ljust(32)} -> #{state[:url]}"
+    end
 
     export_to_csv('states', states)
 
-    parse_regions
+    regions = parse_regions(states.first)
+
+    $stdout.puts "  -- Scraped total #{regions.count} regions --"
+
+    regions.each do |region|
+      $stdout.puts "  #{region[:name].ljust(32)} -> #{region[:url]}"
+    end
+
+    export_to_csv('regions', regions)
+
     parse_products
   end
 
   def parse_states
-    $stdout.puts '== Scraping states page =='
+    $stdout.puts "\n== Scraping states page =="
     page_html = get_page_html(STATES_URL)
     return unless page_html
 
@@ -55,24 +70,47 @@ class Scraper
     end
   end
 
-  # TODO: Add implementation, `state` param.
-  def parse_regions; end
+  def parse_regions(state)
+    $stdout.puts "\n== Scraping state `#{state[:name]}` page =="
+
+    page_html = get_page_html(state[:url])
+    return unless page_html
+
+    regions_list = page_html.css('table.table-sort a')
+    return unless regions_list
+
+    regions_list.map do |estate_node|
+      { name: estate_node.content, url: BASE_URL + estate_node[:href] }
+    end
+  end
 
   # TODO: Add implementation, region` param.
   def parse_products; end
 
   def export_to_csv(file_name, data)
-    require 'csv'
+    $stdout.puts "\n== Exporting #{file_name} to CSV file =="
+    filename = "output/#{file_name}.csv"
 
-    $stdout.puts "== Exporting #{file_name} to CSV file =="
+    remove_existing_file(filename)
 
-    CSV.open("output/#{file_name}.csv", 'w') do |csv|
+    CSV.open(filename, 'w') do |csv|
       csv << data.first.keys
       data.each { |record| csv << record.each_value }
     end
+
+    csv_file_created?(filename)
   rescue StandardError => error
     warn '  -- Error during saving to CSV file --'
     warn error.inspect
+  end
+
+  def remove_existing_file(file_name)
+    File.delete(file_name) if File.exist?(file_name)
+  end
+
+  def csv_file_created?(file_name)
+    return unless File.exist?(file_name)
+    $stdout.puts "  -> File `#{file_name}` successfully created :D --"
   end
 end
 
