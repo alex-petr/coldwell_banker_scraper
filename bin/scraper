@@ -38,7 +38,19 @@ class Scraper
   # region
   def parse_products; end
 
-  def export_to_csv; end
+  def export_to_csv
+    require 'csv'
+
+    column_names = %w[street_address state country zip_code price bedrooms
+        bathrooms year_built photos url]
+
+    $stdout.puts '== Exporting results to CSV file... =='
+
+    CSV.open('output/products.csv', 'w') do |csv|
+      csv << column_names
+      csv << %w[data1 data2]
+    end
+  end
 end
 
 Scraper.new.call
