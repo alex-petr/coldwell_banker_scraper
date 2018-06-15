@@ -21,17 +21,38 @@ class Scraper
 
   private
 
-  # NOTE: Now its scrap All states, 1 Region, 1 page of products from region
+  # NOTE: Now its scrap all states, 1 region, 1 page of products from region,
+  # 24 products info
   #
   # TODO: Single thread scraping.
+  # products_data = []
   # scrape_states.each do |state|
-  #   scrape_regions(state).each { |reg| scrape_region_products(state, reg) }
+  #   scrape_regions(state).each do |region|
+  #     scrape_region_products(state, region).each do |product|
+  #       products_data << scrape_product(product)
+  #     end
+  #   end
   # end
+  # ScraperCsvUtils.export_to_csv('name', products_data)
   def scrape_data
     state  = scrape_states&.first
     region = scrape_regions(state)[1]
 
-    scrape_region_products(state, region)
+    # Scrape 1 product info.
+    # products = scrape_region_products(state, region)
+    # scrape_product(products.first)
+
+    # Scrape 1 page (24) products info for 1 region.
+    products_data = []
+
+    scrape_region_products(state, region).each do |product|
+      products_data << scrape_product(product)
+    end
+
+    ScraperCsvUtils.export_to_csv(
+      "4_#{state[:name]}_#{region[:name]}_products",
+      products_data
+    )
   end
 
   def scrape_states
@@ -81,8 +102,46 @@ class Scraper
     products
   end
 
-  # TODO: Add implementation, `url` param.
-  def scrape_product; end
+  def scrape_product_photos(product_page_html, selector)
+    product_page_html.css(selector).map { |image| image['data-href'] }
+  end
+
+  def scrape_product(product)
+    $stdout.puts "  -- Scraping product `#{product[:name]}` -> "\
+      "#{product[:url]} --"
+    page_html = ScraperUtils.get_page_html(product[:url])
+    return unless page_html
+
+    product_data_node = page_html
+                        .at_css('div[itemtype="http://schema.org/Product"]')
+    residence_data_node = page_html
+                          .at_css('div[itemtype="http://schema.org/residence"]')
+
+    {
+      name: residence_data_node&.at_css('span[itemprop="name"]')&.content,
+      url: product[:url],
+      address: residence_data_node&.at_css('span[itemprop="streetAddress"]')
+                 &.content,
+      price_currency:
+        product_data_node.at_css('meta[itemprop="priceCurrency"]')[:content],
+      price: product_data_node.at_css('span[itemprop="price"]')[:content],
+      state: residence_data_node&.at_css('span[itemprop="addressRegion"]')
+               &.content,
+      city: residence_data_node&.at_css('span[itemprop="addressLocality"]')
+              &.content,
+      postal_zip_code:
+        residence_data_node&.at_css('span[itemprop="postalCode"]')&.content,
+      bathrooms:
+        page_html.css('h4.subhead-meta + ul li')[0].content.gsub(/\D/, ''),
+      bedrooms:
+        page_html.css('h4.subhead-meta + ul li')[1].content.gsub(/\D/, ''),
+      # FIXME: For some products `year_built` scrapped empty string.
+      year_built: page_html.css('div.col h3.subhead + ul')[9].css('li').last
+                           .content.gsub(/\D/, ''),
+      photos: scrape_product_photos(page_html,
+                                    'section.content div.fancybox-small')
+    }
+  end
 end
 
 Scraper.new.call
