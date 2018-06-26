@@ -7,19 +7,22 @@ module ScraperCsvUtils
 
   def export_to_csv(name, data)
     file_name = output_csv_filename(name)
+    save_to_file(file_name, data)
+    csv_file_saved?(file_name)
+  rescue StandardError => error
+    warn "  -- Error during saving to CSV file: #{error.inspect} --"
+  end
 
-    # To get actual data after scraping.
-    remove_existing_file(file_name)
+  private
 
+  ##
+  # @param file_name [String] relative path to file
+  # @param data [Array] of [Hash] => [{key1: 1}, {key2: 2}]
+  def save_to_file(file_name, data)
     CSV.open(file_name, 'w') do |csv|
       csv << data.first.keys
-      data.each { |record| csv << record.each_value }
+      data.each { |record| csv << record.values }
     end
-
-    csv_file_created?(file_name)
-  rescue StandardError => error
-    warn '  -- Error during saving to CSV file --'
-    warn error.inspect
   end
 
   def output_csv_filename(file_name)
@@ -28,12 +31,10 @@ module ScraperCsvUtils
     "output/#{file_name}.csv"
   end
 
-  def remove_existing_file(file_name)
-    File.delete(file_name) if File.exist?(file_name)
-  end
-
-  def csv_file_created?(file_name)
-    return unless File.exist?(file_name)
-    $stdout.puts "  -> File `#{file_name}` successfully created :D --"
+  ##
+  # To ensure that actual data after scraping saved.
+  def csv_file_saved?(file_name)
+    return unless File.exist?(file_name) && File.size?(file_name)
+    $stdout.puts "  -> File `#{file_name}` successfully saved :D --"
   end
 end
