@@ -7,5 +7,8 @@
 # Ignore IDE files
 /.idea
 
+# RubyCritic quality report
+/tmp
+
 # Ignore output CSV files
 output/*.csv
