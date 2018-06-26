@@ -21,19 +21,22 @@ class Scraper
 
   private
 
+  def initialize
+    @products_data = []
+  end
+
   # NOTE: Now its scrap all states, 1 region, 1 page of products from region,
   # 24 products info
   #
   # TODO: Single thread scraping.
-  # products_data = []
   # scrape_states.each do |state|
   #   scrape_regions(state).each do |region|
   #     scrape_region_products(state, region).each do |product|
-  #       products_data << scrape_product(product)
+  #       @products_data << scrape_product(product)
   #     end
   #   end
   # end
-  # ScraperCsvUtils.export_to_csv('name', products_data)
+  # ScraperCsvUtils.export_to_csv('name', @products_data)
   def scrape_data
     state  = scrape_states&.first
     region = scrape_regions(state)[1]
@@ -43,15 +46,14 @@ class Scraper
     # scrape_product(products.first)
 
     # Scrape 1 page (24) products info for 1 region.
-    products_data = []
 
     scrape_region_products(state, region).each do |product|
-      products_data << scrape_product(product)
+      @products_data << scrape_product(product)
     end
 
     ScraperCsvUtils.export_to_csv(
       "4_#{state[:name]}_#{region[:name]}_products",
-      products_data
+      @products_data
     )
   end
 
@@ -109,6 +111,7 @@ class Scraper
   def scrape_product(product)
     $stdout.puts "  -- Scraping product `#{product[:name]}` -> "\
       "#{product[:url]} --"
+
     page_html = ScraperUtils.get_page_html(product[:url])
     return unless page_html
 
