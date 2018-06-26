@@ -59,11 +59,7 @@ class Scraper
   end
 
   def scrape_states
-    states = scrape_links_page('states', "#{BASE_URL}/sitemap/real-estate/",
-                               'table.table-sort a')
-
-    $stdout.puts "  -- Scraped total #{states.count} states --"
-    print_name_link(states)
+    states = scrape_links_page('states', STATES_LIST_URL, 'table.table-sort a')
 
     export_to_csv('1_states', states)
 
@@ -73,9 +69,6 @@ class Scraper
   def scrape_regions(state)
     regions = scrape_links_page("state `#{state[:name]}`", state[:url],
                                 'table.table-sort a')
-
-    $stdout.puts "  -- Scraped total #{regions.count} regions --"
-    print_name_link(regions)
 
     export_to_csv("2_#{state[:name]}_regions", regions)
 
@@ -87,9 +80,6 @@ class Scraper
     products = scrape_links_page("region `#{region[:name]}`", region[:url],
                                  'div#searchList div.prop-info div.address a',
                                  '.street-address')
-
-    $stdout.puts "  -- Scraped total #{products.count} products --"
-    print_name_link(products)
 
     export_to_csv("3_#{state[:name]}_#{region[:name]}_products", products)
 
