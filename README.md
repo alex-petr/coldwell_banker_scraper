@@ -8,6 +8,16 @@ This is a Ruby script to scrape products from
 Scraped states, regions, products data then saved to `output/` directory in 
 files with CSV format.
 
+## This scraper script uses
+
+* Static HTML (DOM) parsing for links/general info
+* Semantic annotation recognizing in product/residence Microformat for parsing
+  estate-specific data embedded in the product pages
+
+## Workflow: how it works
+
+![Workflow](https://github.com/alex-petr/coldwell_banker_scraper/raw/master/doc/Workflow.png)
+
 ## Features
 
 * Service Object Pattern which provide one public method - `#call`
@@ -17,7 +27,8 @@ files with CSV format.
 * [Nokogiri](https://github.com/sparklemotion/nokogiri) for HTML parsing with 
 XPath and CSS selector support.
 * CSV export via [CSV Ruby class](http://ruby-doc.org/stdlib-2.0.0/libdoc/csv/rdoc/CSV.html)
-* Code style is provided via [RuboCop](https://github.com/rubocop-hq/rubocop) 
+* Code style is provided via [RuboCop](https://github.com/rubocop-hq/rubocop)
+* Ruby code quality reporter via [RubyCritic](https://github.com/whitesmith/rubycritic)
 
 ## Requirements
 
