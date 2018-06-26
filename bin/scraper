@@ -1,6 +1,13 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+require 'curb'
+require 'nokogiri'
+require 'csv'
+
+require_relative '../lib/scraper_utils'
+require_relative '../lib/scraper_csv_utils'
+
 # Main class for scrapping https://www.coldwellbankerhomes.com.
 #
 # For any state or states must be total scraped 20 000 or more products.
@@ -8,11 +15,8 @@
 # Author::    Alexander Petrov mailto:alex.petrofan@gmail.com
 # Link::      https://www.linkedin.com/in/alex-petrov/
 class Scraper
-  require 'curb'
-  require 'nokogiri'
-  require 'csv'
-  require_relative '../lib/scraper_utils'
-  require_relative '../lib/scraper_csv_utils'
+  include ScraperUtils
+  include ScraperCsvUtils
 
   def call
     $stdout.puts '== Scraping... =='
@@ -36,7 +40,7 @@ class Scraper
   #     end
   #   end
   # end
-  # ScraperCsvUtils.export_to_csv('name', @products_data)
+  # export_to_csv('name', @products_data)
   def scrape_data
     state  = scrape_states&.first
     region = scrape_regions(state)[1]
@@ -51,55 +55,43 @@ class Scraper
       @products_data << scrape_product(product)
     end
 
-    ScraperCsvUtils.export_to_csv(
-      "4_#{state[:name]}_#{region[:name]}_products",
-      @products_data
-    )
+    export_to_csv("4_#{state[:name]}_#{region[:name]}_products", @products_data)
   end
 
   def scrape_states
-    states = ScraperUtils.scrape_links_page(
-      'states',
-      "#{ScraperUtils::BASE_URL}/sitemap/real-estate/",
-      'table.table-sort a'
-    )
+    states = scrape_links_page('states', "#{BASE_URL}/sitemap/real-estate/",
+                               'table.table-sort a')
 
     $stdout.puts "  -- Scraped total #{states.count} states --"
-    ScraperUtils.print_name_link(states)
+    print_name_link(states)
 
-    ScraperCsvUtils.export_to_csv('1_states', states)
+    export_to_csv('1_states', states)
 
     states
   end
 
   def scrape_regions(state)
-    regions = ScraperUtils.scrape_links_page("state `#{state[:name]}`",
-                                             state[:url],
-                                             'table.table-sort a')
+    regions = scrape_links_page("state `#{state[:name]}`", state[:url],
+                                'table.table-sort a')
 
     $stdout.puts "  -- Scraped total #{regions.count} regions --"
-    ScraperUtils.print_name_link(regions)
+    print_name_link(regions)
 
-    ScraperCsvUtils.export_to_csv("2_#{state[:name]}_regions", regions)
+    export_to_csv("2_#{state[:name]}_regions", regions)
 
     regions
   end
 
   # TODO: Refactor to fix RuboCop `Metrics/MethodLength` offense.
   def scrape_region_products(state, region)
-    products = ScraperUtils.scrape_links_page(
-      "region `#{region[:name]}`",
-      region[:url],
-      'div#searchList div.prop-info div.address a',
-      '.street-address'
-    )
+    products = scrape_links_page("region `#{region[:name]}`", region[:url],
+                                 'div#searchList div.prop-info div.address a',
+                                 '.street-address')
 
     $stdout.puts "  -- Scraped total #{products.count} products --"
-    ScraperUtils.print_name_link(products)
+    print_name_link(products)
 
-    ScraperCsvUtils.export_to_csv(
-      "3_#{state[:name]}_#{region[:name]}_products", products
-    )
+    export_to_csv("3_#{state[:name]}_#{region[:name]}_products", products)
 
     products
   end
@@ -108,11 +100,12 @@ class Scraper
     product_page_html.css(selector).map { |image| image['data-href'] }
   end
 
+  # TODO: Refactor to fix RuboCop Metrics/AbcSize/MethodLength offenses.
   def scrape_product(product)
     $stdout.puts "  -- Scraping product `#{product[:name]}` -> "\
       "#{product[:url]} --"
 
-    page_html = ScraperUtils.get_page_html(product[:url])
+    page_html = get_page_html(product[:url])
     return unless page_html
 
     product_data_node = page_html
@@ -138,7 +131,7 @@ class Scraper
         page_html.css('h4.subhead-meta + ul li')[0].content.gsub(/\D/, ''),
       bedrooms:
         page_html.css('h4.subhead-meta + ul li')[1].content.gsub(/\D/, ''),
-      # FIXME: For some products `year_built` scrapped empty string.
+      # FIXME: For some products `year_built` scraped empty string.
       year_built: page_html.css('div.col h3.subhead + ul')[9].css('li').last
                            .content.gsub(/\D/, ''),
       photos: scrape_product_photos(page_html,
