@@ -19,14 +19,23 @@ class Scraper
   include ScraperCsvUtils
 
   def call
-    $stdout.puts '== Scraping... =='
+    output_start_message
     scrape_data
+    output_finish_message
   end
 
   private
 
   def initialize
     @products_data = []
+  end
+
+  def output_start_message
+    $stdout.puts '== Scraping started... =='
+  end
+
+  def output_finish_message
+    $stdout.puts '== Scraping finished =='
   end
 
   # NOTE: Now its scrap all states, 1 region, 1 page of products from region,
