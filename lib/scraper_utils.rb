@@ -27,8 +27,13 @@ module ScraperUtils
     end
 
     print_name_link(links)
+    export_to_csv(name, links)
 
     links
+  end
+
+  def scrape_product_photos(product_page_html, selector)
+    product_page_html.css(selector).map { |image| image['data-href'] }
   end
 
   private

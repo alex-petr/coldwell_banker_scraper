@@ -70,38 +70,22 @@ class Scraper
   end
 
   def scrape_states
-    states = scrape_links_page('states', STATES_LIST_URL, 'table.table-sort a')
-
-    export_to_csv('1_states', states)
-
-    states
+    scrape_links_page('1_states', STATES_LIST_URL, 'table.table-sort a')
   end
 
   def scrape_regions(state)
-    regions = scrape_links_page("state `#{state[:name]}`", state[:url],
-                                'table.table-sort a')
-
-    export_to_csv("2_#{state[:name]}_regions", regions)
-
-    regions
+    scrape_links_page("2_#{state[:name]}_regions", state[:url],
+                      'table.table-sort a')
   end
 
-  # TODO: Refactor to fix RuboCop `Metrics/MethodLength` offense.
   def scrape_region_products(state, region)
-    products = scrape_links_page("region `#{region[:name]}`", region[:url],
-                                 'div#searchList div.prop-info div.address a',
-                                 '.street-address')
-
-    export_to_csv("3_#{state[:name]}_#{region[:name]}_products", products)
-
-    products
+    scrape_links_page("3_#{state[:name]}_#{region[:name]}_products",
+                      region[:url],
+                      'div#searchList div.prop-info div.address a',
+                      '.street-address')
   end
 
-  def scrape_product_photos(product_page_html, selector)
-    product_page_html.css(selector).map { |image| image['data-href'] }
-  end
-
-  # TODO: Refactor to fix RuboCop Metrics/AbcSize/MethodLength offenses.
+  # TODO: Refactor to fix RuboCop Metrics: AbcSize/MethodLength offenses.
   def scrape_product(product)
     @logger.info "  -- Scraping product `#{product[:name]}` -> "\
       "#{product[:url]} --"
