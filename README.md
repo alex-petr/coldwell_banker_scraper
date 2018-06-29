@@ -27,6 +27,7 @@ files with CSV format.
 * [Nokogiri](https://github.com/sparklemotion/nokogiri) for HTML parsing with 
 XPath and CSS selector support.
 * CSV export via [CSV Ruby class](http://ruby-doc.org/stdlib-2.0.0/libdoc/csv/rdoc/CSV.html)
+* Logging via [Logger Ruby class](https://ruby-doc.org/stdlib-2.2.3/libdoc/logger/rdoc/Logger.html)
 * Code style is provided via [RuboCop](https://github.com/rubocop-hq/rubocop)
 * Ruby code quality reporter via [RubyCritic](https://github.com/whitesmith/rubycritic)
 

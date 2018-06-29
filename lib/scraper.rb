@@ -3,6 +3,7 @@
 require 'curb'
 require 'nokogiri'
 require 'csv'
+require 'logger'
 
 require_relative 'scraper_utils'
 require_relative 'scraper_csv_utils'
@@ -28,14 +29,15 @@ class Scraper
 
   def initialize
     @products_data = []
+    @logger = Logger.new($stdout)
   end
 
   def output_start_message
-    $stdout.puts '== Scraping started... =='
+    @logger.info '== Scraping started... =='
   end
 
   def output_finish_message
-    $stdout.puts '== Scraping finished =='
+    @logger.info '== Scraping finished =='
   end
 
   # NOTE: Now its scrap all states, 1 region, 1 page of products from region,
@@ -101,40 +103,40 @@ class Scraper
 
   # TODO: Refactor to fix RuboCop Metrics/AbcSize/MethodLength offenses.
   def scrape_product(product)
-    $stdout.puts "  -- Scraping product `#{product[:name]}` -> "\
+    @logger.info "  -- Scraping product `#{product[:name]}` -> "\
       "#{product[:url]} --"
 
     page_html = get_page_html(product[:url])
     return unless page_html
 
     product_data_node = page_html
-                            .at_css('div[itemtype="http://schema.org/Product"]')
+                        .at_css('div[itemtype="http://schema.org/Product"]')
     residence_data_node = page_html
-                              .at_css('div[itemtype="http://schema.org/residence"]')
+                          .at_css('div[itemtype="http://schema.org/residence"]')
 
     {
-        name: residence_data_node&.at_css('span[itemprop="name"]')&.content,
-        url: product[:url],
-        address: residence_data_node&.at_css('span[itemprop="streetAddress"]')
-                     &.content,
-        price_currency:
-            product_data_node.at_css('meta[itemprop="priceCurrency"]')[:content],
-        price: product_data_node.at_css('span[itemprop="price"]')[:content],
-        state: residence_data_node&.at_css('span[itemprop="addressRegion"]')
-                   &.content,
-        city: residence_data_node&.at_css('span[itemprop="addressLocality"]')
-                  &.content,
-        postal_zip_code:
-            residence_data_node&.at_css('span[itemprop="postalCode"]')&.content,
-        bathrooms:
-            page_html.css('h4.subhead-meta + ul li')[0].content.gsub(/\D/, ''),
-        bedrooms:
-            page_html.css('h4.subhead-meta + ul li')[1].content.gsub(/\D/, ''),
-        # FIXME: For some products `year_built` scraped empty string.
-        year_built: page_html.css('div.col h3.subhead + ul')[9].css('li').last
-                        .content.gsub(/\D/, ''),
-        photos: scrape_product_photos(page_html,
-                                      'section.content div.fancybox-small')
+      name: residence_data_node&.at_css('span[itemprop="name"]')&.content,
+      url: product[:url],
+      address: residence_data_node&.at_css('span[itemprop="streetAddress"]')
+                 &.content,
+      price_currency:
+        product_data_node.at_css('meta[itemprop="priceCurrency"]')[:content],
+      price: product_data_node.at_css('span[itemprop="price"]')[:content],
+      state: residence_data_node&.at_css('span[itemprop="addressRegion"]')
+               &.content,
+      city: residence_data_node&.at_css('span[itemprop="addressLocality"]')
+              &.content,
+      postal_zip_code:
+        residence_data_node&.at_css('span[itemprop="postalCode"]')&.content,
+      bathrooms:
+        page_html.css('h4.subhead-meta + ul li')[0].content.gsub(/\D/, ''),
+      bedrooms:
+        page_html.css('h4.subhead-meta + ul li')[1].content.gsub(/\D/, ''),
+      # FIXME: For some products `year_built` scraped empty string.
+      year_built: page_html.css('div.col h3.subhead + ul')[9].css('li').last
+                           .content.gsub(/\D/, ''),
+      photos: scrape_product_photos(page_html,
+                                    'section.content div.fancybox-small')
     }
   end
 end

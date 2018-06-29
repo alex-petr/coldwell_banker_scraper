@@ -10,7 +10,7 @@ module ScraperCsvUtils
     save_to_file(file_name, data)
     csv_file_saved?(file_name)
   rescue StandardError => error
-    warn "  -- Error during saving to CSV file: #{error.inspect} --"
+    @logger.error "  -- Error during saving to CSV file: #{error.inspect} --"
   end
 
   private
@@ -27,7 +27,7 @@ module ScraperCsvUtils
 
   def output_csv_filename(file_name)
     file_name = file_name.downcase.tr(' ', '_')
-    $stdout.puts "\n== Exporting `#{file_name}` ->> CSV file =="
+    @logger.info "== Exporting `#{file_name}` ->> CSV file =="
     "output/#{file_name}.csv"
   end
 
@@ -35,6 +35,6 @@ module ScraperCsvUtils
   # To ensure that actual data after scraping saved.
   def csv_file_saved?(file_name)
     return unless File.exist?(file_name) && File.size?(file_name)
-    $stdout.puts "  -> File `#{file_name}` successfully saved :D --"
+    @logger.info "  -> File `#{file_name}` successfully saved :D --"
   end
 end

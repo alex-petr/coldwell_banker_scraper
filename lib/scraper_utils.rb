@@ -11,11 +11,11 @@ module ScraperUtils
   def get_page_html(url)
     Nokogiri::HTML(Curl.get(url).body_str)
   rescue StandardError => error
-    warn "  -- Error during getting page HTML: #{error.inspect} --"
+    @logger.error "  -- Error during getting page HTML: #{error.inspect} --"
   end
 
   def scrape_links_page(name, url, selector, name_selector = nil)
-    $stdout.puts "\n== Scraping #{name} page =="
+    @logger.info "== Scraping #{name} page =="
 
     # Performance note: condition inside loop is bad, but for this case its ok
     links = get_page_html(url)&.css(selector)&.map do |link_node|
@@ -34,9 +34,9 @@ module ScraperUtils
   private
 
   def print_name_link(name_links)
-    $stdout.puts "  -- Scraped total #{name_links.count} links --"
+    @logger.info "  -- Scraped total #{name_links.count} links --"
     name_links.each do |name_link|
-      $stdout.puts "  #{name_link[:name].ljust(32)} -> #{name_link[:url]}"
+      @logger.info "  #{name_link[:name].ljust(32)} -> #{name_link[:url]}"
     end
   end
 end
